@@ -1,0 +1,26 @@
+{
+  "name": "moxy-node",
+  "version": "0.1.0",
+  "description": "Transient State Blockchain Node Mocker and Proxy",
+  "main": "index.js",
+  "author": "Axelar",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "node ./index.js",
+    "prettier": "prettier --write .",
+    "test": "mocha"
+  },
+  "dependencies": {
+    "jayson": "^3.4.4",
+    "minimist": "^1.2.5",
+    "node-cleanup": "^2.1.2"
+  },
+  "devDependencies": {
+    "mocha": "^8.3.2",
+    "prettier": "^2.2.1"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+}

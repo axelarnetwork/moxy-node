@@ -1,6 +1,6 @@
 const assert = require('assert');
 const jayson = require('jayson');
-const getServer = require('../src/server');
+const getServer = require('../lib/server');
 const { rpcUrl, rpcPort = 3000, transientState = [] } = require('../.test-config.json').ethereum;
 
 const server = getServer(transientState, rpcUrl, rpcPort);

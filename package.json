@@ -2,15 +2,19 @@
   "name": "moxy-node",
   "version": "0.1.0",
   "description": "Transient State Blockchain Node Mocker and Proxy",
-  "main": "index.js",
+  "main": "./bin/index.js",
   "author": "Axelar",
   "license": "MIT",
-  "private": true,
+  "private": false,
   "scripts": {
-    "start": "node ./index.js",
+    "start": "node ./bin/index.js",
     "prettier": "prettier --write .",
     "test": "mocha"
   },
+  "bin": {
+    "moxy-node": "./bin/index.js"
+  },
+  "preferGlobal": true,
   "dependencies": {
     "jayson": "^3.4.4",
     "minimist": "^1.2.5",
@@ -22,5 +26,17 @@
   },
   "engines": {
     "node": ">=14"
-  }
+  },
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/axelarnetwork/moxy-node.git"
+  },
+  "bugs": {
+    "url": "https://github.com/axelarnetwork/moxy-node/issues"
+  },
+  "homepage": "https://github.com/axelarnetwork/moxy-node#readme"
 }

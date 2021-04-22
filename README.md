@@ -30,7 +30,7 @@ A JSON-RPC mocker and proxy, intended to mock and override blockchain state via 
 
 ## Install and test
 
-1. `yarn install`
+1. `npm install`
 
 2. Create a `.test-config.json` in the root directory with the following:
 
@@ -47,11 +47,19 @@ A JSON-RPC mocker and proxy, intended to mock and override blockchain state via 
 }
 ```
 
-3. `yarn test`
+3. `npm run test`
 
 ## Usage
 
-`yarn start --rpc ACTUAL_NODE_RPC_URL [--port MOXY_PORT]`
+Locally:
+
+`npm run start --rpc ACTUAL_NODE_RPC_URL [--port MOXY_PORT]`
+
+Globally
+
+`npm install -g https://github.com/axelarnetwork/moxy-node`
+
+`moxy-node --rpc ACTUAL_NODE_RPC_URL [--port MOXY_PORT]`
 
 Default listening port (i.e. MOXY_PORT) is 3330.
 
@@ -62,7 +70,7 @@ Calling `setTransientState` method with state key and overrides will result in o
 ### Example
 
 ```console
-$ yarn start --rpc http://username:password@bitcoin-node.domain.com:8332
+$ npm run --rpc http://username:password@bitcoin-node.domain.com:8332
 
 
 $ curl --data '{"method":"getbestblockhash","params":[],"id":1,"jsonrpc":"2.0"}' -H "Content-Type: application/json" -X POST localhost:3330

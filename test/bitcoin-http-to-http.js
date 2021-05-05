@@ -1,40 +1,21 @@
 const assert = require('assert');
 const jayson = require('jayson');
 const getServer = require('../lib/server');
-const { rpcUrl, rpcPort = 3000, transientState = [] } = require('../.test-config.json').bitcoin;
+const { rpcUrl, httpPort, transientState = [] } = require('../.test-config.json')['bitcoin-http'];
+const { testHttpOverride } = require('./helpers/overrideTests');
 
-const server = getServer(transientState, rpcUrl, rpcPort);
-const client = jayson.client.http(`http://localhost:${rpcPort}`);
+let moxyServer;
+let client;
 
-const testOverride = (method, args, key, overrides, done) => {
-  client.request(method, args, (err, error, firstResult) => {
-    const firstSetParams = [key, overrides];
-
-    client.request('setTransientState', firstSetParams, (err, error, firstSetTime) => {
-      client.request(method, args, (err, error, secondResult) => {
-        const secondSetParams = [key, {}];
-
-        client.request('setTransientState', secondSetParams, (err, error, secondSetTime) => {
-          client.request(method, args, (err, error, thirdResult) => {
-            assert.deepStrictEqual(firstResult, thirdResult);
-            assert.notDeepStrictEqual(firstResult, secondResult);
-            assert(secondSetTime > firstSetTime);
-
-            done();
-          });
-        });
-      });
-    });
-  });
-};
-
-describe('Bitcoin', () => {
-  before(() => {
-    server.start(transientState, rpcUrl, rpcPort);
+describe('Bitcoin HTTP -> HTTP', () => {
+  before(async () => {
+    moxyServer = await getServer({ rpcUrl, httpPort, transientState });
+    moxyServer.start();
+    client = jayson.client.http(`http://localhost:${httpPort}`);
   });
 
-  after(() => {
-    server.stop();
+  after((done) => {
+    moxyServer.stop(done);
   });
 
   it('can override block hash', (done) => {
@@ -44,7 +25,7 @@ describe('Bitcoin', () => {
       },
     };
 
-    testOverride('getbestblockhash', [], 'block', overrides, done);
+    testHttpOverride(client, 'getbestblockhash', [], 'block', overrides, client, done);
   });
 
   it('can override blockchain info', (done) => {
@@ -66,7 +47,7 @@ describe('Bitcoin', () => {
       },
     };
 
-    testOverride('getbestblockhash', [], 'block', overrides, done);
+    testHttpOverride(client, 'getbestblockhash', [], 'block', overrides, client, done);
   });
 
   it('can override txout', (done) => {
@@ -111,7 +92,7 @@ describe('Bitcoin', () => {
       ],
     };
 
-    testOverride('gettxout', [txHash, 0], txHash, overrides, done);
+    testHttpOverride(client, 'gettxout', [txHash, 0], txHash, overrides, client, done);
   });
 
   it.skip('can override send raw transaction', (done) => {
@@ -126,6 +107,13 @@ describe('Bitcoin', () => {
       },
     };
 
-    testOverride('sendrawtransaction', [], 'block', overrides, done);
+    testHttpOverride(client, 'sendrawtransaction', [], 'block', overrides, client, done);
+  });
+
+  it('can call non-overridden method', (done) => {
+    client.request('getdifficulty', [], (err, error, result) => {
+      assert(result);
+      done();
+    });
   });
 });

@@ -9,7 +9,8 @@
   "scripts": {
     "start": "node ./bin/index.js",
     "prettier": "prettier --write .",
-    "test": "mocha"
+    "test": "SILENT=true mocha",
+    "test-loud": "mocha"
   },
   "bin": {
     "moxy-node": "bin/index.js"

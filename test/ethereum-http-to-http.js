@@ -1,3 +1,7 @@
+if (process.env.SILENT) {
+  console.log = () => {};
+}
+
 const assert = require('assert');
 const jayson = require('jayson');
 const getServer = require('../lib/server');

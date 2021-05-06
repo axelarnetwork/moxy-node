@@ -19,8 +19,10 @@ const options = {
 
 getServer(options).then((server) => {
   nodeCleanup(function (exitCode, signal) {
+    console.log('Shutting down moxy gracefully...');
+
     server.stop(() => {
-      console.log('\nShutting Down...');
+      console.log('Shut down.');
       process.kill(process.pid, signal);
     });
 
@@ -29,5 +31,6 @@ getServer(options).then((server) => {
     return false;
   });
 
+  console.log('Starting moxy...');
   server.start();
 });

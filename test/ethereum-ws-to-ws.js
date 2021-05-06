@@ -1,3 +1,7 @@
+if (process.env.SILENT) {
+  console.log = () => {};
+}
+
 const assert = require('assert');
 const WebSocket = require('ws');
 const EventEmitter = require('events');
@@ -219,4 +223,64 @@ describe('Ethereum WS -> WS', () => {
 
     wClient.send(JSON.stringify({ jsonrpc: '2.0', method: 'net_peerCount', params: [], id: state.id++ }));
   });
+
+  it.skip('can override new heads subscription', (done) => {
+    const overrides = {
+      parentHash: {
+        value: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
+      },
+      sha3Uncles: {
+        value: '0x1111111111111111111111111111111111111111111111111111111111111111',
+      },
+      miner: {
+        value: '0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
+      },
+      stateRoot: {
+        value: '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+      },
+      transactionsRoot: {
+        value: '0x6666666666666666666666666666666666666666666666666666666666666666',
+      },
+      receiptsRoot: {
+        value: '0x3333333333333333333333333333333333333333333333333333333333333333',
+      },
+      difficulty: {
+        value: '0x11111111',
+      },
+      number: {
+        value: '0x999999',
+      },
+      gasLimit: {
+        value: '0x1111111',
+      },
+      gasUsed: {
+        value: '0x11111',
+      },
+      timestamp: {
+        value: '0x66666666',
+      },
+      extraData: {
+        value: '0x3333333333333333333333333333333333333333333333333333333333333333',
+      },
+      mixHash: {
+        value: '0x3333333333333333333333333333333333333333333333333333333333333333',
+      },
+      nonce: {
+        value: '0xdddddddddddddddd',
+      },
+      hash: {
+        value: '0x3333333333333333333333333333333333333333333333333333333333333333',
+      },
+    };
+
+    testWsOverride(wClient, 'eth_subscribe', ['newHeads'], 'block', overrides, hClient, state, done);
+
+    // state.emitter.once(`messageX`, (message) => {
+    //   done();
+    // });
+
+    // // {"jsonrpc":"2.0", "id": 1, "method": "eth_unsubscribe", "params": ["0x9cef478923ff08bf67fde6c64013158d"]}
+
+    // wClient.send(JSON.stringify({ jsonrpc: '2.0', method: 'eth_subscribe', params: ['newHeads'], id: state.id++ }));
+  }).timeout(100000);
 });

@@ -1,3 +1,7 @@
+if (process.env.SILENT) {
+  console.log = () => {};
+}
+
 const assert = require('assert');
 const WebSocket = require('ws');
 const EventEmitter = require('events');

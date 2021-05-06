@@ -36,7 +36,7 @@ describe('Ethereum HTTP -> HTTP', () => {
     testHttpOverride(client, 'eth_gasPrice', [], 'gasPrice', { value: 5 }, client, done);
   });
 
-  it('can override transaction', (done) => {
+  it('can override transaction by hash', (done) => {
     const txHash = '0xb99b05ef337e5aa320e3702363b6b41abfa5bdad0f5654db1490a7f27beb18ea';
 
     const overrides = {
@@ -81,7 +81,7 @@ describe('Ethereum HTTP -> HTTP', () => {
       },
     };
 
-    testHttpOverride(client, 'eth_getTransactionReceipt', [txHash], txHash, overrides, client, done);
+    testHttpOverride(client, 'eth_getTransactionByHash', [txHash], txHash, overrides, client, done);
   });
 
   it('can override transaction count (pending)', (done) => {

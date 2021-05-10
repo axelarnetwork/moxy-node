@@ -7,6 +7,7 @@
     "gettxout",
     "jrpc",
     "moxy",
+    "proxied",
     "sendrawtransaction",
     "txout",
     "unpadded",

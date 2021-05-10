@@ -5,7 +5,6 @@ const nodeCleanup = require('node-cleanup');
 
 const args = require('minimist')(process.argv.slice(2));
 assert(args['rpc'], 'RPC URL Required (--rpc).');
-assert(args['protocol'], 'Listen Protocol Required (--protocol).');
 
 const transientState = args['transientState'] ? require(args['transientState']) : [];
 const getServer = require('../lib/server');

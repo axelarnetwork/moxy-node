@@ -1,0 +1,15 @@
+{
+  "cSpell.words": [
+    "Axelar",
+    "bestblockhash",
+    "getbestblockhash",
+    "getblockchaininfo",
+    "gettxout",
+    "jrpc",
+    "moxy",
+    "sendrawtransaction",
+    "txout",
+    "unpadded",
+    "vout"
+  ]
+}

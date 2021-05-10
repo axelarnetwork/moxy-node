@@ -65,7 +65,7 @@ Default listening port (i.e. MOXY_PORT) is 3330.
 
 Once running, will proxy all JSON RPC calls to node URl specified.
 
-Calling `setTransientState` method with state key and overrides will result in overridden reposnses for relevant calls.
+Calling `setTransientState` method with state key and overrides will result in overridden responses for relevant calls.
 
 ### Example
 

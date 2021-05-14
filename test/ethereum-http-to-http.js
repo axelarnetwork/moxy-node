@@ -10,12 +10,14 @@ const { testHttpOverride } = require('./helpers/overrideTests');
 
 let moxyServer;
 let client;
+let control;
 
 describe('Ethereum HTTP -> HTTP', () => {
   before(async () => {
     moxyServer = await getServer({ rpcUrl, httpPort, wsPort, transientState });
     moxyServer.start();
     client = jayson.client.http(`http://localhost:${httpPort}`);
+    control = rpcUrl.startsWith('https') ? jayson.client.https(rpcUrl) : jayson.client.http(rpcUrl);
   });
 
   after((done) => {
@@ -29,15 +31,15 @@ describe('Ethereum HTTP -> HTTP', () => {
       },
     };
 
-    testHttpOverride(client, 'eth_blockNumber', [], 'block', overrides, client, done);
+    testHttpOverride(client, control, 'eth_blockNumber', [], 'block', overrides, client, done);
   });
 
   it('can override chain id', (done) => {
-    testHttpOverride(client, 'eth_chainId', [], 'chainId', { value: 7 }, client, done);
+    testHttpOverride(client, control, 'eth_chainId', [], 'chainId', { value: 7 }, client, done);
   });
 
   it('can override gas price', (done) => {
-    testHttpOverride(client, 'eth_gasPrice', [], 'gasPrice', { value: 5 }, client, done);
+    testHttpOverride(client, control, 'eth_gasPrice', [], 'gasPrice', { value: 5 }, client, done);
   });
 
   it('can override transaction by hash', (done) => {
@@ -85,7 +87,7 @@ describe('Ethereum HTTP -> HTTP', () => {
       },
     };
 
-    testHttpOverride(client, 'eth_getTransactionByHash', [txHash], txHash, overrides, client, done);
+    testHttpOverride(client, control, 'eth_getTransactionByHash', [txHash], txHash, overrides, client, done);
   });
 
   it('can override transaction count (pending)', (done) => {
@@ -100,7 +102,16 @@ describe('Ethereum HTTP -> HTTP', () => {
       },
     };
 
-    testHttpOverride(client, 'eth_getTransactionCount', [account, countType], account, overrides, client, done);
+    testHttpOverride(
+      client,
+      control,
+      'eth_getTransactionCount',
+      [account, countType],
+      account,
+      overrides,
+      client,
+      done
+    );
   });
 
   it('can override transaction count (latest)', (done) => {
@@ -115,11 +126,20 @@ describe('Ethereum HTTP -> HTTP', () => {
       },
     };
 
-    testHttpOverride(client, 'eth_getTransactionCount', [account, countType], account, overrides, client, done);
+    testHttpOverride(
+      client,
+      control,
+      'eth_getTransactionCount',
+      [account, countType],
+      account,
+      overrides,
+      client,
+      done
+    );
   });
 
   it('can override transaction count (at block number)', (done) => {
-    client.request('eth_blockNumber', [], (err, error, blockNumber) => {
+    control.request('eth_blockNumber', [], (err, error, blockNumber) => {
       const account = '0x4f9cd45a29af9a19ee6d67e03be4ee963e704dd8';
       const countType = blockNumber;
 
@@ -131,7 +151,16 @@ describe('Ethereum HTTP -> HTTP', () => {
         },
       };
 
-      testHttpOverride(client, 'eth_getTransactionCount', [account, countType], account, overrides, client, done);
+      testHttpOverride(
+        client,
+        control,
+        'eth_getTransactionCount',
+        [account, countType],
+        account,
+        overrides,
+        client,
+        done
+      );
     });
   });
 
@@ -168,7 +197,7 @@ describe('Ethereum HTTP -> HTTP', () => {
       },
     };
 
-    testHttpOverride(client, 'eth_getTransactionReceipt', [txHash], txHash, overrides, client, done);
+    testHttpOverride(client, control, 'eth_getTransactionReceipt', [txHash], txHash, overrides, client, done);
   });
 
   it.skip('can override send raw transaction', (done) => {
@@ -182,13 +211,29 @@ describe('Ethereum HTTP -> HTTP', () => {
       },
     };
 
-    testHttpOverride(client, 'sendrawtransaction', [], 'block', overrides, client, done);
+    testHttpOverride(client, control, 'sendrawtransaction', [], 'block', overrides, client, done);
   });
 
-  it('can call non-overridden method', (done) => {
-    client.request('net_peerCount', [], (err, error, result) => {
-      assert(result);
-      done();
+  it('can call non-overridden method (net_peerCount)', (done) => {
+    control.request('net_peerCount', [], (err, error, controlResult) => {
+      client.request('net_peerCount', [], (err, error, result) => {
+        assert.deepStrictEqual(result, controlResult);
+        done();
+      });
+    });
+  });
+
+  it('can call non-overridden method (eth_getTransactionByBlockHashAndIndex)', (done) => {
+    const blockHash = '0x008493f55cac48c84881c63173c47eac7e3d7b3f2f4b2748d474686b7ab218b8';
+
+    control.request('eth_getTransactionByBlockHashAndIndex', [blockHash, '0x2'], (err, error, controlResult) => {
+      client.request('eth_getTransactionByBlockHashAndIndex', [blockHash, '0x2'], (err, error, result) => {
+        console.log(controlResult);
+        console.log(result);
+
+        assert.deepStrictEqual(result, controlResult);
+        done();
+      });
     });
   });
 });

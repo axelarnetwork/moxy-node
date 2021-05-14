@@ -10,12 +10,14 @@ const { testHttpOverride } = require('./helpers/overrideTests');
 
 let moxyServer;
 let client;
+let control;
 
 describe('Bitcoin HTTP -> HTTP', () => {
   before(async () => {
     moxyServer = await getServer({ rpcUrl, httpPort, transientState });
     moxyServer.start();
     client = jayson.client.http(`http://localhost:${httpPort}`);
+    control = rpcUrl.startsWith('https') ? jayson.client.https(rpcUrl) : jayson.client.http(rpcUrl);
   });
 
   after((done) => {
@@ -29,7 +31,7 @@ describe('Bitcoin HTTP -> HTTP', () => {
       },
     };
 
-    testHttpOverride(client, 'getbestblockhash', [], 'block', overrides, client, done);
+    testHttpOverride(client, control, 'getbestblockhash', [], 'block', overrides, client, done);
   });
 
   it('can override blockchain info', (done) => {
@@ -51,7 +53,7 @@ describe('Bitcoin HTTP -> HTTP', () => {
       },
     };
 
-    testHttpOverride(client, 'getbestblockhash', [], 'block', overrides, client, done);
+    testHttpOverride(client, control, 'getblockchaininfo', [], 'block', overrides, client, done);
   });
 
   it('can override txout', (done) => {
@@ -96,7 +98,7 @@ describe('Bitcoin HTTP -> HTTP', () => {
       ],
     };
 
-    testHttpOverride(client, 'gettxout', [txHash, 0], txHash, overrides, client, done);
+    testHttpOverride(client, control, 'gettxout', [txHash, 0], txHash, overrides, client, done);
   });
 
   it.skip('can override send raw transaction', (done) => {
@@ -111,13 +113,24 @@ describe('Bitcoin HTTP -> HTTP', () => {
       },
     };
 
-    testHttpOverride(client, 'sendrawtransaction', [], 'block', overrides, client, done);
+    testHttpOverride(client, control, 'sendrawtransaction', [], 'block', overrides, client, done);
   });
 
-  it('can call non-overridden method', (done) => {
-    client.request('getdifficulty', [], (err, error, result) => {
-      assert(result);
-      done();
+  it('can call non-overridden method (getdifficulty)', (done) => {
+    control.request('getdifficulty', [], (err, error, controlResult) => {
+      client.request('getdifficulty', [], (err, error, result) => {
+        assert.deepStrictEqual(result, controlResult);
+        done();
+      });
+    });
+  });
+
+  it('can call non-overridden method (getchaintxstats)', (done) => {
+    control.request('getchaintxstats', [], (err, error, controlResult) => {
+      client.request('getchaintxstats', [], (err, error, result) => {
+        assert.deepStrictEqual(result, controlResult);
+        done();
+      });
     });
   });
 });

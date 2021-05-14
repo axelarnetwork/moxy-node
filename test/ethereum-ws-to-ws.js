@@ -3,43 +3,29 @@ if (process.env.SILENT) {
 }
 
 const assert = require('assert');
-const WebSocket = require('ws');
-const EventEmitter = require('events');
 const jayson = require('jayson');
+const { v4: uuidv4 } = require('uuid');
 const getServer = require('../lib/server');
 const { rpcUrl, httpPort, wsPort, transientState = [] } = require('../.test-config.json')['ethereum-ws'];
 const { testWsOverride } = require('./helpers/overrideTests');
-
-const state = {
-  emitter: new EventEmitter(),
-  id: 1,
-};
+const { ws } = require('./helpers/clients');
 
 let moxyServer;
 let hClient;
 let wClient;
 
 describe('Ethereum WS -> WS', () => {
-  before((done) => {
-    getServer({ rpcUrl, httpPort, wsPort, transientState }).then((server) => {
-      moxyServer = server;
-      moxyServer.start();
-      hClient = jayson.client.http(`http://localhost:${httpPort}`);
-      wClient = new WebSocket(`ws://localhost:${wsPort}`);
-
-      wClient.on('open', () => {
-        wClient.on('message', (inboundMessage) => {
-          const parsed = JSON.parse(inboundMessage);
-          state.emitter.emit(`message${parsed.id}`, parsed);
-        });
-
-        done();
-      });
-    });
+  before(async () => {
+    moxyServer = await getServer({ rpcUrl, httpPort, wsPort, transientState });
+    moxyServer.start();
+    hClient = jayson.client.http(`http://localhost:${httpPort}`);
+    wClient = await ws(`ws://localhost:${wsPort}`);
+    control = await ws(rpcUrl);
   });
 
   after((done) => {
     wClient.close();
+    control.close();
     moxyServer.stop(done);
   });
 
@@ -50,15 +36,15 @@ describe('Ethereum WS -> WS', () => {
       },
     };
 
-    testWsOverride(wClient, 'eth_blockNumber', [], 'block', overrides, hClient, state, done);
+    testWsOverride(wClient, control, 'eth_blockNumber', [], 'block', overrides, hClient, done);
   });
 
   it('can override chain id', (done) => {
-    testWsOverride(wClient, 'eth_chainId', [], 'chainId', { value: 7 }, hClient, state, done);
+    testWsOverride(wClient, control, 'eth_chainId', [], 'chainId', { value: 7 }, hClient, done);
   });
 
   it('can override gas price', (done) => {
-    testWsOverride(wClient, 'eth_gasPrice', [], 'gasPrice', { value: 5 }, hClient, state, done);
+    testWsOverride(wClient, control, 'eth_gasPrice', [], 'gasPrice', { value: 5 }, hClient, done);
   });
 
   it('can override transaction by hash', (done) => {
@@ -106,7 +92,7 @@ describe('Ethereum WS -> WS', () => {
       },
     };
 
-    testWsOverride(wClient, 'eth_getTransactionReceipt', [txHash], txHash, overrides, hClient, state, done);
+    testWsOverride(wClient, control, 'eth_getTransactionReceipt', [txHash], txHash, overrides, hClient, done);
   });
 
   it('can override transaction count (pending)', (done) => {
@@ -121,7 +107,16 @@ describe('Ethereum WS -> WS', () => {
       },
     };
 
-    testWsOverride(wClient, 'eth_getTransactionCount', [account, countType], account, overrides, hClient, state, done);
+    testWsOverride(
+      wClient,
+      control,
+      'eth_getTransactionCount',
+      [account, countType],
+      account,
+      overrides,
+      hClient,
+      done
+    );
   });
 
   it('can override transaction count (latest)', (done) => {
@@ -136,7 +131,16 @@ describe('Ethereum WS -> WS', () => {
       },
     };
 
-    testWsOverride(wClient, 'eth_getTransactionCount', [account, countType], account, overrides, hClient, state, done);
+    testWsOverride(
+      wClient,
+      control,
+      'eth_getTransactionCount',
+      [account, countType],
+      account,
+      overrides,
+      hClient,
+      done
+    );
   });
 
   it('can override transaction count (at block number)', (done) => {
@@ -154,12 +158,12 @@ describe('Ethereum WS -> WS', () => {
 
       testWsOverride(
         wClient,
+        control,
         'eth_getTransactionCount',
         [account, countType],
         account,
         overrides,
         hClient,
-        state,
         done
       );
     });
@@ -198,7 +202,7 @@ describe('Ethereum WS -> WS', () => {
       },
     };
 
-    testWsOverride(wClient, 'eth_getTransactionReceipt', [txHash], txHash, overrides, hClient, state, done);
+    testWsOverride(wClient, control, 'eth_getTransactionReceipt', [txHash], txHash, overrides, hClient, done);
   });
 
   it.skip('can override send raw transaction', (done) => {
@@ -212,16 +216,42 @@ describe('Ethereum WS -> WS', () => {
       },
     };
 
-    testWsOverride(wClient, 'sendrawtransaction', [], 'block', overrides, hClient, state, done);
+    testWsOverride(wClient, control, 'sendrawtransaction', [], 'block', overrides, hClient, state, done);
   });
 
-  it('can call non-overridden method', (done) => {
-    state.emitter.once(`message${state.id}`, ({ result }) => {
-      assert(result);
-      done();
-    });
+  it('can call non-overridden method (net_peerCount)', (done) => {
+    hClient.request('net_peerCount', [], (err, error, controlResult) => {
+      const id = uuidv4();
 
-    wClient.send(JSON.stringify({ jsonrpc: '2.0', method: 'net_peerCount', params: [], id: state.id++ }));
+      wClient.emitter.once(`message${id}`, ({ result }) => {
+        assert.deepStrictEqual(result, controlResult);
+        done();
+      });
+
+      wClient.send(JSON.stringify({ jsonrpc: '2.0', method: 'net_peerCount', params: [], id }));
+    });
+  });
+
+  it('can call non-overridden method (eth_getTransactionByBlockHashAndIndex)', (done) => {
+    const blockHash = '0x008493f55cac48c84881c63173c47eac7e3d7b3f2f4b2748d474686b7ab218b8';
+
+    hClient.request('eth_getTransactionByBlockHashAndIndex', [blockHash, '0x2'], (err, error, controlResult) => {
+      const id = uuidv4();
+
+      wClient.emitter.once(`message${id}`, ({ result }) => {
+        assert.deepStrictEqual(result, controlResult);
+        done();
+      });
+
+      wClient.send(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'eth_getTransactionByBlockHashAndIndex',
+          params: [blockHash, '0x2'],
+          id,
+        })
+      );
+    });
   });
 
   it.skip('can override new heads subscription', (done) => {
@@ -273,7 +303,7 @@ describe('Ethereum WS -> WS', () => {
       },
     };
 
-    testWsOverride(wClient, 'eth_subscribe', ['newHeads'], 'block', overrides, hClient, state, done);
+    testWsOverride(wClient, control, 'eth_subscribe', ['newHeads'], 'block', overrides, hClient, done);
 
     // state.emitter.once(`messageX`, (message) => {
     //   done();

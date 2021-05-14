@@ -20,6 +20,7 @@
     "jayson": "^3.4.4",
     "minimist": "^1.2.5",
     "node-cleanup": "^2.1.2",
+    "uuid": "^3.4.0",
     "ws": "^7.4.5"
   },
   "devDependencies": {

@@ -1,20 +1,26 @@
 const assert = require('assert');
+const { v4: uuidv4 } = require('uuid');
 
-const testHttpOverride = (client, method, params, key, overrides, managementClient, done) => {
-  client.request(method, params, (err, error, firstResult) => {
-    const firstSetParams = [key, overrides];
+const testHttpOverride = (client, control, method, params, key, overrides, managementClient, done) => {
+  control.request(method, params, (err, error, controlResult) => {
+    client.request(method, params, (err, error, firstResult) => {
+      assert.deepStrictEqual(firstResult, controlResult);
 
-    managementClient.request('setTransientState', firstSetParams, (err, error, firstSetTime) => {
-      client.request(method, params, (err, error, secondResult) => {
-        const secondSetParams = [key, {}];
+      const firstSetParams = [key, overrides];
 
-        managementClient.request('setTransientState', secondSetParams, (err, error, secondSetTime) => {
-          client.request(method, params, (err, error, thirdResult) => {
-            assert.deepStrictEqual(firstResult, thirdResult);
-            assert.notDeepStrictEqual(firstResult, secondResult);
-            assert(secondSetTime > firstSetTime);
+      managementClient.request('setTransientState', firstSetParams, (err, error, firstSetTime) => {
+        client.request(method, params, (err, error, secondResult) => {
+          const secondSetParams = [key, {}];
 
-            done();
+          managementClient.request('setTransientState', secondSetParams, (err, error, secondSetTime) => {
+            client.request(method, params, (err, error, thirdResult) => {
+              assert.deepStrictEqual(firstResult, controlResult);
+              assert.deepStrictEqual(firstResult, thirdResult);
+              assert.notDeepStrictEqual(firstResult, secondResult);
+              assert(secondSetTime > firstSetTime);
+
+              done();
+            });
           });
         });
       });
@@ -22,32 +28,43 @@ const testHttpOverride = (client, method, params, key, overrides, managementClie
   });
 };
 
-const testWsOverride = (client, method, params, key, overrides, managementClient, state, done) => {
-  state.emitter.once(`message${state.id}`, ({ result: firstResult }) => {
-    const firstSetParams = [key, overrides];
+const testWsOverride = (client, control, method, params, key, overrides, managementClient, done) => {
+  const controlId = uuidv4();
+  const firstId = uuidv4();
+  const secondId = uuidv4();
+  const thirdId = uuidv4();
 
-    managementClient.request('setTransientState', firstSetParams, (err, error, firstSetTime) => {
-      state.emitter.once(`message${state.id}`, ({ result: secondResult }) => {
-        const secondSetParams = [key, {}];
+  control.emitter.once(`message${controlId}`, ({ result: controlResult }) => {
+    client.emitter.once(`message${firstId}`, ({ result: firstResult }) => {
+      assert.deepStrictEqual(firstResult, controlResult);
 
-        managementClient.request('setTransientState', secondSetParams, (err, error, secondSetTime) => {
-          state.emitter.once(`message${state.id}`, ({ result: thirdResult }) => {
-            assert.deepStrictEqual(firstResult, thirdResult);
-            assert.notDeepStrictEqual(firstResult, secondResult);
-            assert(secondSetTime > firstSetTime);
+      const firstSetParams = [key, overrides];
 
-            done();
+      managementClient.request('setTransientState', firstSetParams, (err, error, firstSetTime) => {
+        client.emitter.once(`message${secondId}`, ({ result: secondResult }) => {
+          const secondSetParams = [key, {}];
+
+          managementClient.request('setTransientState', secondSetParams, (err, error, secondSetTime) => {
+            client.emitter.once(`message${thirdId}`, ({ result: thirdResult }) => {
+              assert.deepStrictEqual(firstResult, thirdResult);
+              assert.notDeepStrictEqual(firstResult, secondResult);
+              assert(secondSetTime > firstSetTime);
+
+              done();
+            });
+
+            client.send(JSON.stringify({ jsonrpc: '2.0', method, params, id: thirdId }));
           });
-
-          client.send(JSON.stringify({ jsonrpc: '2.0', method, params, id: state.id++ }));
         });
-      });
 
-      client.send(JSON.stringify({ jsonrpc: '2.0', method, params, id: state.id++ }));
+        client.send(JSON.stringify({ jsonrpc: '2.0', method, params, id: secondId }));
+      });
     });
+
+    client.send(JSON.stringify({ jsonrpc: '2.0', method, params, id: firstId }));
   });
 
-  client.send(JSON.stringify({ jsonrpc: '2.0', method, params, id: state.id++ }));
+  control.send(JSON.stringify({ jsonrpc: '2.0', method, params, id: controlId }));
 };
 
 module.exports = {

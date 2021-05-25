@@ -14,10 +14,12 @@ let control;
 
 describe('Bitcoin HTTP -> HTTP', () => {
   before(async () => {
-    moxyServer = await getServer({ rpcUrl, httpPort, transientState });
+    moxyServer = await getServer({ rpcUrl, httpPort, transientState, jsonRpcVersion: 1 });
     moxyServer.start();
-    client = jayson.client.http(`http://localhost:${httpPort}`);
-    control = rpcUrl.startsWith('https') ? jayson.client.https(rpcUrl) : jayson.client.http(rpcUrl);
+    client = jayson.client.http(`http://user:pass@localhost:${httpPort}`, { version: 1 });
+    control = rpcUrl.startsWith('https')
+      ? jayson.client.https(rpcUrl, { version: 1 })
+      : jayson.client.http(rpcUrl, { version: 1 });
   });
 
   after((done) => {

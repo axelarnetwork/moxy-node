@@ -28,6 +28,7 @@ A JSON-RPC mocker and proxy, intended to mock and override blockchain state via 
 - [ ] error code/message overriding
 - [ ] output/save in-memory transient state
 - [ ] https support
+- [ ] JSON RPC 1.0 support via WebSockets
 
 ## Install and test
 
@@ -61,16 +62,17 @@ A JSON-RPC mocker and proxy, intended to mock and override blockchain state via 
 
 Locally:
 
-`npm run start --rpc ACTUAL_NODE_RPC_URL [--httpPort MOXY_HTTP_PORT] [--wsPort MOXY_WS_PORT]`
+`npm run start --rpc ACTUAL_NODE_RPC_URL [--httpPort MOXY_HTTP_PORT] [--wsPort MOXY_WS_PORT] [--jsonRpcVersion JSON_RPC_VERSION]`
 
 Globally
 
 `npm install -g https://github.com/axelarnetwork/moxy-node`
 
-`moxy-node --rpc ACTUAL_NODE_RPC_URL [--httpPort MOXY_HTTP_PORT] [--wsPort MOXY_WS_PORT]`
+`moxy-node --rpc ACTUAL_NODE_RPC_URL [--httpPort MOXY_HTTP_PORT] [--wsPort MOXY_WS_PORT] [--jsonRpcVersion JSON_RPC_VERSION]`
 
 Default http listening port (i.e. MOXY_HTTP_PORT) is 3000.
 Default http listening port (i.e. MOXY_WS_PORT) is 3001.
+Default json rpc version (i.e. JSON_RPC_VERSION) is 2.
 
 Once running, will proxy all JSON RPC calls to node URL specified.
 

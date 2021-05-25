@@ -14,6 +14,7 @@ const options = {
   httpPort: args['httpPort'] ?? 3000,
   wsPort: args['wsPort'] ?? 3001,
   transientState,
+  jsonRpcVersion: args['jsonRpcVersion'] ?? 2,
 };
 
 getServer(options).then((server) => {

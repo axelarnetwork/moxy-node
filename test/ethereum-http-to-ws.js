@@ -140,7 +140,8 @@ describe('Ethereum HTTP -> WS', () => {
   });
 
   it('can override transaction count (at block number)', (done) => {
-    control.request('eth_blockNumber', [], (err, error, blockNumber) => {
+    control.request('eth_blockNumber', [], (err, response) => {
+      const { result: blockNumber } = response;
       const account = '0x4f9cd45a29af9a19ee6d67e03be4ee963e704dd8';
       const countType = blockNumber;
 
@@ -216,8 +217,12 @@ describe('Ethereum HTTP -> WS', () => {
   });
 
   it('can call non-overridden method (net_peerCount)', (done) => {
-    control.request('net_peerCount', [], (err, error, controlResult) => {
-      client.request('net_peerCount', [], (err, error, result) => {
+    control.request('net_peerCount', [], (err, controlResponse) => {
+      const { result: controlResult } = controlResponse;
+
+      client.request('net_peerCount', [], (err, response) => {
+        const { result } = response;
+
         assert.deepStrictEqual(result, controlResult);
         done();
       });
@@ -227,10 +232,11 @@ describe('Ethereum HTTP -> WS', () => {
   it('can call non-overridden method (eth_getTransactionByBlockHashAndIndex)', (done) => {
     const blockHash = '0x008493f55cac48c84881c63173c47eac7e3d7b3f2f4b2748d474686b7ab218b8';
 
-    control.request('eth_getTransactionByBlockHashAndIndex', [blockHash, '0x2'], (err, error, controlResult) => {
-      client.request('eth_getTransactionByBlockHashAndIndex', [blockHash, '0x2'], (err, error, result) => {
-        console.log(controlResult);
-        console.log(result);
+    control.request('eth_getTransactionByBlockHashAndIndex', [blockHash, '0x2'], (err, controlResponse) => {
+      const { result: controlResult } = controlResponse;
+
+      client.request('eth_getTransactionByBlockHashAndIndex', [blockHash, '0x2'], (err, response) => {
+        const { result } = response;
 
         assert.deepStrictEqual(result, controlResult);
         done();

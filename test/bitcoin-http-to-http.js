@@ -58,6 +58,21 @@ describe('Bitcoin HTTP -> HTTP', () => {
     testHttpOverride(client, control, 'getblockchaininfo', [], 'block', overrides, client, done);
   });
 
+  it('can override blockchain info (softforks)', (done) => {
+    const overrides = {
+      softforks: {
+        value: {
+          bip34: { type: 'buried', active: true, height: 21111 },
+          bip65: { type: 'buried', active: false, height: 581885 },
+          csv: { type: 'buried', active: true, height: 777777 },
+          segwit: { type: 'buried', active: true, height: 888888 },
+        },
+      },
+    };
+
+    testHttpOverride(client, control, 'getblockchaininfo', [], 'block', overrides, client, done);
+  });
+
   it('can override txout', (done) => {
     const txHash = '329559aea176bc09c51f86f396f173b31cea241175ba0f37faefdc478f4d2870';
 
@@ -119,8 +134,12 @@ describe('Bitcoin HTTP -> HTTP', () => {
   });
 
   it('can call non-overridden method (getdifficulty)', (done) => {
-    control.request('getdifficulty', [], (err, error, controlResult) => {
-      client.request('getdifficulty', [], (err, error, result) => {
+    control.request('getdifficulty', [], (err, controlResponse) => {
+      const { result: controlResult } = controlResponse;
+
+      client.request('getdifficulty', [], (err, response) => {
+        const { result } = response;
+
         assert.deepStrictEqual(result, controlResult);
         done();
       });
@@ -128,9 +147,56 @@ describe('Bitcoin HTTP -> HTTP', () => {
   });
 
   it('can call non-overridden method (getchaintxstats)', (done) => {
-    control.request('getchaintxstats', [], (err, error, controlResult) => {
-      client.request('getchaintxstats', [], (err, error, result) => {
+    control.request('getchaintxstats', [], (err, controlResponse) => {
+      const { result: controlResult } = controlResponse;
+
+      client.request('getchaintxstats', [], (err, response) => {
+        const { result } = response;
+
         assert.deepStrictEqual(result, controlResult);
+        done();
+      });
+    });
+  });
+
+  it('can call a deprecated method, resulting in a transport error (getinfo)', (done) => {
+    control.request('getinfo', [], (controlErr, controlResponse) => {
+      const { code: controlCode, message: controlMessage } = JSON.parse(controlErr.message);
+
+      client.request('getinfo', [], (err, response) => {
+        const { code, message } = JSON.parse(err.message);
+
+        assert.deepStrictEqual(code, controlCode);
+        assert.deepStrictEqual(message, controlMessage);
+        assert.deepStrictEqual(response, controlResponse);
+        done();
+      });
+    });
+  });
+
+  it('can call a method with no expected data (gettxout)', (done) => {
+    const txHash = '329559aea176bc09c51f86f396f173b31cea241175ba0f37faefdc478f4d2870';
+
+    control.request('gettxout', [txHash, 2], (controlErr, controlResponse) => {
+      client.request('gettxout', [txHash, 2], (err, response) => {
+        assert.deepStrictEqual(response.result, controlResponse.result);
+        done();
+      });
+    });
+  });
+
+  it('can call a method incorrectly, resulting in a json rpc error (gettxout)', (done) => {
+    const txHash = '329559aea176bc09c51f86f396f173b31cea241175ba0f37faefdc478f4d2870';
+
+    control.request('gettxout', [txHash], (controlErr, controlResponse) => {
+      const { code: controlCode, message: controlMessage } = JSON.parse(controlErr.message);
+
+      client.request('gettxout', [txHash], (err, response) => {
+        const { code, message } = JSON.parse(err.message);
+
+        assert.deepStrictEqual(code, controlCode);
+        assert.deepStrictEqual(message, controlMessage);
+        assert.deepStrictEqual(response, controlResponse);
         done();
       });
     });

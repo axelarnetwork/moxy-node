@@ -22,8 +22,7 @@ const httpFromWs = (url) =>
 
       const request = (method, params, callback) => {
         emitter.once(`message${id}`, (inboundMessage) => {
-          const { error, result } = inboundMessage;
-          error ? callback(null, error, result) : callback(null, undefined, result);
+          callback(null, inboundMessage);
         });
 
         client.send(JSON.stringify({ jsonrpc: '2.0', method, params, id: id++ }));
@@ -56,7 +55,8 @@ const wsFromHttp = (url) => {
   const send = (message) => {
     const { jsonrpc, method, params, id } = JSON.parse(message);
 
-    client.request(method, params, (err, error, result) => {
+    client.request(method, params, (err, response) => {
+      const { result } = response;
       emitter.emit(`message${id}`, { jsonrpc, id, result });
     });
   };

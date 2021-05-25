@@ -1,20 +1,23 @@
 #!/usr/bin/env node
 
 const assert = require('assert');
+const path = require('path');
 const nodeCleanup = require('node-cleanup');
 
-const args = require('minimist')(process.argv.slice(2));
-assert(args['rpc'], 'RPC URL Required (--rpc).');
+const isSet = (arg) => typeof arg === 'string' || typeof arg === 'number';
 
-const transientState = args['transientState'] ? require(args['transientState']) : [];
+const args = require('minimist')(process.argv.slice(2));
+assert(isSet(args['rpc']), 'RPC URL Required (--rpc).');
+
+const transientState = isSet(args['transientState']) ? require(path.join(process.cwd(), args['transientState'])) : [];
 const getServer = require('../lib/server');
 
 const options = {
   rpcUrl: args['rpc'],
-  httpPort: args['httpPort'] ?? 3000,
-  wsPort: args['wsPort'] ?? 3001,
+  httpPort: isSet(args['httpPort']) ? args['httpPort'] : 3000,
+  wsPort: isSet(args['wsPort']) ? args['wsPort'] : 3001,
   transientState,
-  jsonRpcVersion: args['jsonRpcVersion'] ?? 2,
+  jsonRpcVersion: isSet(args['jsonRpcVersion']) ? args['jsonRpcVersion'] : 2,
 };
 
 getServer(options).then((server) => {

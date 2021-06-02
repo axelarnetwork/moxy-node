@@ -139,7 +139,8 @@ describe('Ethereum HTTP -> HTTP', () => {
   });
 
   it('can override transaction count (at block number)', (done) => {
-    control.request('eth_blockNumber', [], (err, error, blockNumber) => {
+    control.request('eth_blockNumber', [], (err, response) => {
+      const { result: blockNumber } = response;
       const account = '0x4f9cd45a29af9a19ee6d67e03be4ee963e704dd8';
       const countType = blockNumber;
 
@@ -215,8 +216,8 @@ describe('Ethereum HTTP -> HTTP', () => {
   });
 
   it('can call non-overridden method (net_peerCount)', (done) => {
-    control.request('net_peerCount', [], (err, error, controlResult) => {
-      client.request('net_peerCount', [], (err, error, result) => {
+    control.request('net_peerCount', [], (err, { result: controlResult }) => {
+      client.request('net_peerCount', [], (err, { result }) => {
         assert.deepStrictEqual(result, controlResult);
         done();
       });
@@ -226,11 +227,22 @@ describe('Ethereum HTTP -> HTTP', () => {
   it('can call non-overridden method (eth_getTransactionByBlockHashAndIndex)', (done) => {
     const blockHash = '0x008493f55cac48c84881c63173c47eac7e3d7b3f2f4b2748d474686b7ab218b8';
 
-    control.request('eth_getTransactionByBlockHashAndIndex', [blockHash, '0x2'], (err, error, controlResult) => {
-      client.request('eth_getTransactionByBlockHashAndIndex', [blockHash, '0x2'], (err, error, result) => {
-        console.log(controlResult);
-        console.log(result);
+    control.request('eth_getTransactionByBlockHashAndIndex', [blockHash, '0x2'], (err, { result: controlResult }) => {
+      client.request('eth_getTransactionByBlockHashAndIndex', [blockHash, '0x2'], (err, { result }) => {
+        assert.deepStrictEqual(result, controlResult);
+        done();
+      });
+    });
+  });
 
+  it('can call a non-existent method, resulting in a json rpc error (noMethod)', (done) => {
+    control.request('noMethod', [], (controlErr, controlResponse) => {
+      const { error: controlError, result: controlResult } = controlResponse;
+
+      client.request('noMethod', [], (err, response) => {
+        const { error, result } = response;
+
+        assert.deepStrictEqual(error, controlError);
         assert.deepStrictEqual(result, controlResult);
         done();
       });
